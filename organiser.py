@@ -4,9 +4,11 @@ import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QComboBox, QPushButton, 
                              QFileDialog, QMessageBox, QSpinBox, QGroupBox,
-                             QTableWidget, QTableWidgetItem, QHeaderView)
+                             QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QPixmap
+import urllib.request
+import urllib.error
 from zebra import Zebra
 import openpyxl
 from datetime import datetime
@@ -185,10 +187,29 @@ class PrinterSelectorGUI(QMainWindow):
         self.preview_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.preview_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.preview_table.setAlternatingRowColors(True)
+        self.preview_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.preview_table.itemSelectionChanged.connect(self.preview_zpl_label)
         file_layout.addWidget(self.preview_table)
-        
+
         file_group.setLayout(file_layout)
         main_layout.addWidget(file_group)
+
+        # ZPL label preview group
+        zpl_group = QGroupBox("Label Preview (Labelary)")
+        zpl_layout = QVBoxLayout()
+
+        self.zpl_preview_img = QLabel("Select a row to preview the label")
+        self.zpl_preview_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.zpl_preview_img.setMinimumHeight(120)
+        self.zpl_preview_img.setStyleSheet("border: 1px solid #ccc; background: #f9f9f9;")
+        zpl_layout.addWidget(self.zpl_preview_img)
+
+        self.zpl_status_label = QLabel("")
+        self.zpl_status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        zpl_layout.addWidget(self.zpl_status_label)
+
+        zpl_group.setLayout(zpl_layout)
+        main_layout.addWidget(zpl_group)
         
         # Print button
         self.print_btn = QPushButton("Print")
@@ -394,6 +415,51 @@ class PrinterSelectorGUI(QMainWindow):
                     self.preview_table.setItem(r_idx, c_idx, item)
         except Exception as e:
             print(f"Preview error: {e}")
+
+    def preview_zpl_label(self):
+        """Generate ZPL for selected row and fetch PNG preview from Labelary API"""
+        selected = self.preview_table.selectedItems()
+        if not selected:
+            return
+
+        row_idx = self.preview_table.currentRow()
+        row_data = []
+        for c in range(self.preview_table.columnCount()):
+            item = self.preview_table.item(row_idx, c)
+            row_data.append(item.text() if item and item.text() else None)
+
+        try:
+            zpl = self.generate_zpl_single_label(tuple(row_data))
+            zpl = self.sanitize_zpl(zpl)
+
+            dpmm = 8 if self.dpi == 203 else 12
+            width_in = round(self.label_width / self.dpi, 2)
+            height_in = round(self.label_height / self.dpi, 2)
+            url = f"http://api.labelary.com/v1/printers/{dpmm}dpmm/labels/{width_in}x{height_in}/0/"
+
+            self.zpl_status_label.setText("Fetching preview...")
+            self.zpl_status_label.setStyleSheet("color: blue;")
+            QApplication.processEvents()
+
+            req = urllib.request.Request(url, data=zpl.encode('utf-8'), method='POST')
+            req.add_header('Accept', 'image/png')
+            with urllib.request.urlopen(req, timeout=10) as response:
+                png_data = response.read()
+
+            pixmap = QPixmap()
+            pixmap.loadFromData(png_data)
+            scaled = pixmap.scaled(400, 200, Qt.AspectRatioMode.KeepAspectRatio,
+                                   Qt.TransformationMode.SmoothTransformation)
+            self.zpl_preview_img.setPixmap(scaled)
+            self.zpl_status_label.setText(f"Preview: row {row_idx + 1}")
+            self.zpl_status_label.setStyleSheet("color: green;")
+
+        except urllib.error.URLError:
+            self.zpl_status_label.setText("Preview unavailable (no internet connection)")
+            self.zpl_status_label.setStyleSheet("color: orange;")
+        except Exception as e:
+            self.zpl_status_label.setText(f"Preview error: {e}")
+            self.zpl_status_label.setStyleSheet("color: red;")
 
     def check_ready_to_print(self):
         """Check if all requirements are met for printing"""
