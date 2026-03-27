@@ -3,8 +3,9 @@ import json
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QComboBox, QPushButton, 
-                             QFileDialog, QMessageBox, QSpinBox, QGroupBox,
-                             QTableWidget, QTableWidgetItem, QHeaderView, QScrollArea)
+                             QFileDialog, QMessageBox, QSpinBox, QDoubleSpinBox,
+                             QGroupBox, QTableWidget, QTableWidgetItem,
+                             QHeaderView, QScrollArea)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap
 import urllib.request
@@ -26,7 +27,17 @@ class PrinterSelectorGUI(QMainWindow):
         self.print_rectangle = True
         self.rect_width_mm = 38
         self.rect_height_mm = 18
+        self.print_columns = 3  # default: first 3 columns
+        self.norm_column_index = 5  # default: column 5 (1-based)
+        self.font_size_override = 39  # default font size in dots
+        self.norm_y_offset_mm = 4.0
+        self.norm_x_offset_mm = 7.5
+        self.norm_font_height = 25
+        self.norm_font_width = 25
+        self.coords_file = os.path.join(os.path.dirname(__file__), 'label_coords.json')
         self.config_file = os.path.join(os.path.dirname(__file__), 'printer_config.json')
+        # Load saved coords from JSON into instance attrs
+        self._apply_coords_from_file()
         self.init_ui()
         
         # Automatically set path to organiser.xlsx
@@ -39,12 +50,22 @@ class PrinterSelectorGUI(QMainWindow):
         
     def init_ui(self):
         self.setWindowTitle("Organizer labels with zebra printer")
-        self.setGeometry(100, 100, 700, 1000)
-        
-        # Central widget
+        self.setGeometry(100, 100, 740, 1150)
+
+        # Central widget with scroll area so all settings are always accessible
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
+        outer_layout = QVBoxLayout(central_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        outer_layout.addWidget(scroll_area)
+
+        scroll_content = QWidget()
+        scroll_area.setWidget(scroll_content)
+        main_layout = QVBoxLayout(scroll_content)
         main_layout.setSpacing(15)
         main_layout.setContentsMargins(20, 20, 20, 20)
         
@@ -121,12 +142,134 @@ class PrinterSelectorGUI(QMainWindow):
         self.rows_spin.setMinimum(1)
         self.rows_spin.setMaximum(100)
         self.rows_spin.setValue(1)
+        self.rows_spin.setMinimumWidth(90)
         self.rows_spin.valueChanged.connect(self.update_max_rows)
         rows_layout.addWidget(rows_label)
         rows_layout.addWidget(self.rows_spin)
         rows_layout.addStretch()
         settings_layout.addLayout(rows_layout)
         
+        # Print columns
+        cols_layout = QHBoxLayout()
+        cols_label = QLabel("Print columns:")
+        self.cols_spin = QSpinBox()
+        self.cols_spin.setMinimum(0)
+        self.cols_spin.setMaximum(100)
+        self.cols_spin.setValue(3)
+        self.cols_spin.setSpecialValueText("All")
+        self.cols_spin.setMinimumWidth(90)
+        self.cols_spin.valueChanged.connect(self.update_print_columns)
+        cols_layout.addWidget(cols_label)
+        cols_layout.addWidget(self.cols_spin)
+        cols_layout.addStretch()
+        settings_layout.addLayout(cols_layout)
+
+        # Font size override
+        fsize_layout = QHBoxLayout()
+        fsize_label = QLabel("Font size (dots):")
+        self.fsize_spin = QSpinBox()
+        self.fsize_spin.setMinimum(0)
+        self.fsize_spin.setMaximum(300)
+        self.fsize_spin.setValue(39)
+        self.fsize_spin.setSpecialValueText("Auto")
+        self.fsize_spin.setMinimumWidth(90)
+        self.fsize_spin.setToolTip("Override automatic font size (dots). 0 = auto-calculated from label height.")
+        self.fsize_spin.valueChanged.connect(self.update_font_size)
+        fsize_layout.addWidget(fsize_label)
+        fsize_layout.addWidget(self.fsize_spin)
+        fsize_layout.addStretch()
+        settings_layout.addLayout(fsize_layout)
+
+        # Norm name column + fine-tuning
+        norm_layout = QHBoxLayout()
+        norm_label = QLabel("Norm name column:")
+        self.norm_spin = QSpinBox()
+        self.norm_spin.setMinimum(0)
+        self.norm_spin.setMaximum(100)
+        self.norm_spin.setValue(5)
+        self.norm_spin.setSpecialValueText("Off")
+        self.norm_spin.setMinimumWidth(90)
+        self.norm_spin.setToolTip("Column index (1-based) containing the norm name (e.g. DIN 912).\nPrinted in the lower right corner of the label.")
+        self.norm_spin.valueChanged.connect(self.update_norm_column)
+        norm_layout.addWidget(norm_label)
+        norm_layout.addWidget(self.norm_spin)
+        norm_layout.addStretch()
+        settings_layout.addLayout(norm_layout)
+
+        # Norm name fine-tuning group
+        norm_group = QGroupBox("Norm name position & font")
+        norm_group_layout = QVBoxLayout()
+
+        # Y offset from bottom
+        norm_y_layout = QHBoxLayout()
+        norm_y_label = QLabel("Y offset from bottom (mm):")
+        self.norm_y_spin = QDoubleSpinBox()
+        self.norm_y_spin.setMinimum(-20.0)
+        self.norm_y_spin.setMaximum(50.0)
+        self.norm_y_spin.setSingleStep(0.5)
+        self.norm_y_spin.setDecimals(1)
+        self.norm_y_spin.setValue(self.norm_y_offset_mm)
+        self.norm_y_spin.setMinimumWidth(90)
+        self.norm_y_spin.setToolTip("Distance from label bottom edge to norm text top (mm). Increase to move text higher.")
+        self.norm_y_spin.valueChanged.connect(self.update_norm_y_offset)
+        norm_y_layout.addWidget(norm_y_label)
+        norm_y_layout.addWidget(self.norm_y_spin)
+        norm_y_layout.addStretch()
+        norm_group_layout.addLayout(norm_y_layout)
+
+        # Right margin from right edge
+        norm_x_layout = QHBoxLayout()
+        norm_x_label = QLabel("Right margin (mm):")
+        self.norm_x_spin = QDoubleSpinBox()
+        self.norm_x_spin.setMinimum(0.0)
+        self.norm_x_spin.setMaximum(50.0)
+        self.norm_x_spin.setSingleStep(0.5)
+        self.norm_x_spin.setDecimals(1)
+        self.norm_x_spin.setValue(self.norm_x_offset_mm)
+        self.norm_x_spin.setMinimumWidth(90)
+        self.norm_x_spin.setToolTip("Distance from the right edge of the label (mm). 0 = flush right. Increase to move text left.")
+        self.norm_x_spin.valueChanged.connect(self.update_norm_x_offset)
+        norm_x_layout.addWidget(norm_x_label)
+        norm_x_layout.addWidget(self.norm_x_spin)
+        norm_x_layout.addStretch()
+        norm_group_layout.addLayout(norm_x_layout)
+
+        # Font height
+        norm_fh_layout = QHBoxLayout()
+        norm_fh_label = QLabel("Font height (dots):")
+        self.norm_fh_spin = QSpinBox()
+        self.norm_fh_spin.setMinimum(6)
+        self.norm_fh_spin.setMaximum(200)
+        self.norm_fh_spin.setValue(self.norm_font_height)
+        self.norm_fh_spin.setMinimumWidth(90)
+        self.norm_fh_spin.valueChanged.connect(self.update_norm_font_height)
+        norm_fh_layout.addWidget(norm_fh_label)
+        norm_fh_layout.addWidget(self.norm_fh_spin)
+        norm_fh_layout.addStretch()
+        norm_group_layout.addLayout(norm_fh_layout)
+
+        # Font width
+        norm_fw_layout = QHBoxLayout()
+        norm_fw_label = QLabel("Font width (dots):")
+        self.norm_fw_spin = QSpinBox()
+        self.norm_fw_spin.setMinimum(6)
+        self.norm_fw_spin.setMaximum(200)
+        self.norm_fw_spin.setValue(self.norm_font_width)
+        self.norm_fw_spin.setMinimumWidth(90)
+        self.norm_fw_spin.valueChanged.connect(self.update_norm_font_width)
+        norm_fw_layout.addWidget(norm_fw_label)
+        norm_fw_layout.addWidget(self.norm_fw_spin)
+        norm_fw_layout.addStretch()
+        norm_group_layout.addLayout(norm_fw_layout)
+
+        # Save coords button
+        save_coords_btn = QPushButton("Save norm coords to label_coords.json")
+        save_coords_btn.clicked.connect(self.save_norm_coords)
+        norm_group_layout.addWidget(save_coords_btn)
+
+        norm_group.setLayout(norm_group_layout)
+        settings_layout.addWidget(norm_group)
+
         # Rectangle settings
         from PyQt6.QtWidgets import QCheckBox
         self.rect_checkbox = QCheckBox("Print border rectangle around text")
@@ -141,6 +284,7 @@ class PrinterSelectorGUI(QMainWindow):
         self.rect_width_spin.setMinimum(10)
         self.rect_width_spin.setMaximum(100)
         self.rect_width_spin.setValue(40)
+        self.rect_width_spin.setMinimumWidth(90)
         self.rect_width_spin.valueChanged.connect(self.update_rect_width)
         rect_width_layout.addWidget(rect_width_label)
         rect_width_layout.addWidget(self.rect_width_spin)
@@ -154,6 +298,7 @@ class PrinterSelectorGUI(QMainWindow):
         self.rect_height_spin.setMinimum(10)
         self.rect_height_spin.setMaximum(100)
         self.rect_height_spin.setValue(18)
+        self.rect_height_spin.setMinimumWidth(90)
         self.rect_height_spin.valueChanged.connect(self.update_rect_height)
         rect_height_layout.addWidget(rect_height_label)
         rect_height_layout.addWidget(self.rect_height_spin)
@@ -381,7 +526,79 @@ class PrinterSelectorGUI(QMainWindow):
         self.rect_height_mm = value
         if hasattr(self, 'zpl_preview_img'):
             self.preview_zpl_label()
-    
+
+    def update_print_columns(self, value):
+        """Update print columns limit (0 = all)"""
+        self.print_columns = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
+    def update_norm_column(self, value):
+        """Update norm name column index (0 = off, 1-based)"""
+        self.norm_column_index = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
+    def update_font_size(self, value):
+        """Update font size override (0 = auto)"""
+        self.font_size_override = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
+    def update_norm_y_offset(self, value):
+        self.norm_y_offset_mm = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
+    def update_norm_x_offset(self, value):
+        self.norm_x_offset_mm = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
+    def update_norm_font_height(self, value):
+        self.norm_font_height = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
+    def update_norm_font_width(self, value):
+        self.norm_font_width = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
+    def save_norm_coords(self):
+        """Save current norm coords to label_coords.json"""
+        data = {
+            "_comment": "Fine-tune label element positions.",
+            "norm_name": {
+                "_comment_y": "Distance from BOTTOM edge to norm text top (mm).",
+                "y_offset_from_bottom_mm": self.norm_y_offset_mm,
+                "x_offset_from_right_mm": self.norm_x_offset_mm,
+                "_comment_font": "Font size in dots at 203 DPI. Scaled automatically for 300 DPI.",
+                "font_height_dots": self.norm_font_height,
+                "font_width_dots": self.norm_font_width
+            }
+        }
+        try:
+            with open(self.coords_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            print(f"Saved coords to {self.coords_file}")
+        except Exception as e:
+            print(f"Failed to save coords: {e}")
+
+    def _apply_coords_from_file(self):
+        """Load label_coords.json and apply values to instance attrs (called once at startup)"""
+        try:
+            if os.path.exists(self.coords_file):
+                with open(self.coords_file, 'r') as f:
+                    data = json.load(f)
+                nc = data.get("norm_name", {})
+                self.norm_y_offset_mm = float(nc.get("y_offset_from_bottom_mm", self.norm_y_offset_mm))
+                self.norm_x_offset_mm = float(nc.get("x_offset_from_right_mm", self.norm_x_offset_mm))
+                self.norm_font_height = int(nc.get("font_height_dots", self.norm_font_height))
+                self.norm_font_width = int(nc.get("font_width_dots", self.norm_font_width))
+        except Exception as e:
+            print(f"Coords file load error: {e}")
+
     def select_file(self):
         """Open file dialog to select Excel file"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -438,6 +655,16 @@ class PrinterSelectorGUI(QMainWindow):
         for c in range(self.preview_table.columnCount()):
             item = self.preview_table.item(row_idx, c)
             row_data.append(item.text() if item and item.text() else None)
+
+        # Carry forward norm text from previous rows if current cell is empty
+        if self.norm_column_index > 0:
+            norm_idx = self.norm_column_index - 1
+            if norm_idx < len(row_data) and (row_data[norm_idx] is None or str(row_data[norm_idx]).strip() == ''):
+                for prev_r in range(row_idx - 1, -1, -1):
+                    item = self.preview_table.item(prev_r, norm_idx)
+                    if item and item.text().strip():
+                        row_data[norm_idx] = item.text().strip()
+                        break
 
         try:
             zpl = self.generate_zpl_single_label(tuple(row_data))
@@ -550,6 +777,15 @@ class PrinterSelectorGUI(QMainWindow):
     
     def generate_zpl_single_label(self, row):
         """Generate ZPL for one label with centered text from one Excel row - each cell on separate line"""
+        # Extract norm name BEFORE slicing so it's independent of print_columns
+        norm_text = None
+        if self.norm_column_index > 0:
+            norm_idx = self.norm_column_index - 1
+            if norm_idx < len(row) and row[norm_idx] is not None and str(row[norm_idx]).strip():
+                norm_text = str(row[norm_idx])
+
+        if self.print_columns > 0:
+            row = row[:self.print_columns]
         scale = self.dpi / 203
         
         zpl = '^XA\n'
@@ -561,8 +797,11 @@ class PrinterSelectorGUI(QMainWindow):
         
         # Font scales proportionally with label height, adjusted for number of lines
         n_lines = max(len(text_parts), 1)
-        font_height = int(self.label_height * scale * 0.20 / (n_lines ** 0.5))
-        font_height = max(20, min(font_height, 200))
+        if self.font_size_override > 0:
+            font_height = int(self.font_size_override * scale)
+        else:
+            font_height = int(self.label_height * scale * 0.20 / (n_lines ** 0.5))
+            font_height = max(20, min(font_height, 200))
         font_width = font_height
         line_spacing = int(font_height * 1.25)
         
@@ -605,7 +844,19 @@ class PrinterSelectorGUI(QMainWindow):
             # Use ^FB with width and center alignment (0,0 = left margin, C = center)
             zpl += f'^FO0,{y_offset}^A0N,{font_height},{font_width}^FB{int(self.label_width * scale)},1,0,C,0^FD{text}^FS\n'
             y_offset += line_spacing
-        
+
+        # Draw norm name — always right-anchored; right margin shifts anchor left
+        if norm_text:
+            nfh = int(self.norm_font_height * scale)
+            nfw = int(self.norm_font_width * scale)
+            y_bottom_offset = int(self.norm_y_offset_mm * self.dpi / 25.4 * scale)
+            right_margin_dots = int(self.norm_x_offset_mm * self.dpi / 25.4 * scale)
+            norm_y = int(self.label_height * scale) - nfh - y_bottom_offset
+            # anchor = right edge of text regardless of text length
+            # 0 margin = flush to right edge; larger margin = further left
+            anchor = max(10, int(self.label_width * scale) - right_margin_dots)
+            zpl += f'^FO0,{norm_y}^A0N,{nfh},{nfw}^FB{anchor},1,0,R,0^FD{norm_text}^FS\n'
+
         zpl += '^XZ\n'
         return zpl
     
@@ -627,11 +878,23 @@ class PrinterSelectorGUI(QMainWindow):
             print(f"  Label {i+1}: {row}")
         print("================================")
         
-        # Generate ZPL for all labels
+        # Generate ZPL for all labels — carry norm text forward from previous row if empty
         all_zpl = ""
+        last_norm_text = None
+        norm_idx = self.norm_column_index - 1  # 0-based
         for row in limited_rows:
+            # If norm column is set and current cell is empty, inject last known norm value
+            if self.norm_column_index > 0 and norm_idx < len(row):
+                cell = row[norm_idx]
+                if cell is None or str(cell).strip() == '':
+                    if last_norm_text is not None:
+                        row = list(row)
+                        row[norm_idx] = last_norm_text
+                        row = tuple(row)
+                else:
+                    last_norm_text = str(cell).strip()
             all_zpl += self.generate_zpl_single_label(row)
-        
+
         return all_zpl
     
     def print_label(self):
