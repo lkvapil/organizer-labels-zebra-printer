@@ -39,7 +39,7 @@ class PrinterSelectorGUI(QMainWindow):
         
     def init_ui(self):
         self.setWindowTitle("Organizer labels with zebra printer")
-        self.setGeometry(100, 100, 700, 750)
+        self.setGeometry(100, 100, 700, 1000)
         
         # Central widget
         central_widget = QWidget()
@@ -200,7 +200,7 @@ class PrinterSelectorGUI(QMainWindow):
 
         self.zpl_preview_img = QLabel("Select a row to preview the label")
         self.zpl_preview_img.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.zpl_preview_img.setMinimumHeight(120)
+        self.zpl_preview_img.setMinimumHeight(200)
         self.zpl_preview_img.setStyleSheet("border: 1px solid #ccc; background: #f9f9f9;")
         zpl_layout.addWidget(self.zpl_preview_img)
 
@@ -413,6 +413,8 @@ class PrinterSelectorGUI(QMainWindow):
                     value = row[c_idx] if c_idx < len(row) else None
                     item = QTableWidgetItem(str(value) if value is not None else "")
                     self.preview_table.setItem(r_idx, c_idx, item)
+
+            self.preview_table.selectRow(0)
         except Exception as e:
             print(f"Preview error: {e}")
 
