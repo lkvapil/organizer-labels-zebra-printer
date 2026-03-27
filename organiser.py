@@ -18,23 +18,23 @@ class PrinterSelectorGUI(QMainWindow):
         self.file_path = None
         self.dpi = 203
         self.max_rows = 1
-        self.label_width = 2 * 203  # 50mm = 2 palce při 203 DPI
-        self.label_height = 1 * 203  # 25mm = 1 palec při 203 DPI
+        self.label_width = 2 * 203  # 50mm = 2 inches at 203 DPI
+        self.label_height = 1 * 203  # 25mm = 1 inch at 203 DPI
         self.print_rectangle = True
         self.rect_width_mm = 38
         self.rect_height_mm = 18
         self.config_file = os.path.join(os.path.dirname(__file__), 'printer_config.json')
         self.init_ui()
         
-        # Automaticky nastav cestu k organiser.xlsx
+        # Automatically set path to organiser.xlsx
         default_file = os.path.join(os.path.dirname(__file__), 'organiser.xlsx')
         if os.path.exists(default_file):
             self.file_path = default_file
-            self.file_label.setText(f"Vybraný soubor: {default_file}")
+            self.file_label.setText(f"Selected file: {default_file}")
             self.check_ready_to_print()
         
     def init_ui(self):
-        self.setWindowTitle("Zebra Printer - Výběr tiskárny")
+        self.setWindowTitle("Zebra Printer - Printer Selection")
         self.setGeometry(100, 100, 600, 500)
         
         # Central widget
@@ -54,11 +54,11 @@ class PrinterSelectorGUI(QMainWindow):
         main_layout.addWidget(title)
         
         # Printer selection group
-        printer_group = QGroupBox("Výběr tiskárny")
+        printer_group = QGroupBox("Printer Selection")
         printer_layout = QVBoxLayout()
         
         # Label for printer
-        printer_label = QLabel("Dostupné tiskárny:")
+        printer_label = QLabel("Available printers:")
         printer_layout.addWidget(printer_label)
         
         # Combo box for printer selection
@@ -67,7 +67,7 @@ class PrinterSelectorGUI(QMainWindow):
         printer_layout.addWidget(self.printer_combo)
         
         # Refresh button
-        refresh_btn = QPushButton("Obnovit seznam tiskáren")
+        refresh_btn = QPushButton("Refresh printer list")
         refresh_btn.clicked.connect(self.load_printers)
         refresh_btn.setMinimumHeight(35)
         printer_layout.addWidget(refresh_btn)
@@ -76,23 +76,23 @@ class PrinterSelectorGUI(QMainWindow):
         main_layout.addWidget(printer_group)
         
         # Settings group
-        settings_group = QGroupBox("Nastavení")
+        settings_group = QGroupBox("Settings")
         settings_layout = QVBoxLayout()
         
         # Label size selection
         label_size_layout = QHBoxLayout()
-        label_size_label = QLabel("Rozměr štítku:")
+        label_size_label = QLabel("Label size:")
         self.label_size_combo = QComboBox()
         self.label_size_combo.addItems([
-            "50x25mm (2x1 palce)",
-            "4x6 palců (102x152mm)",
-            "4x3 palců (102x76mm)",
-            "4x2 palců (102x51mm)",
-            "3x2 palců (76x51mm)",
-            "3x1 palců (76x25mm)",
-            "2x1 palců (51x25mm)"
+            "50x25mm (2x1 inches)",
+            "4x6 inches (102x152mm)",
+            "4x3 inches (102x76mm)",
+            "4x2 inches (102x51mm)",
+            "3x2 inches (76x51mm)",
+            "3x1 inches (76x25mm)",
+            "2x1 inches (51x25mm)"
         ])
-        self.label_size_combo.setCurrentText("50x25mm (2x1 palce)")
+        self.label_size_combo.setCurrentText("50x25mm (2x1 inches)")
         self.label_size_combo.currentTextChanged.connect(self.update_label_size)
         label_size_layout.addWidget(label_size_label)
         label_size_layout.addWidget(self.label_size_combo)
@@ -112,7 +112,7 @@ class PrinterSelectorGUI(QMainWindow):
         
         # Max rows per label
         rows_layout = QHBoxLayout()
-        rows_label = QLabel("Max. štítků:")
+        rows_label = QLabel("Max. labels:")
         self.rows_spin = QSpinBox()
         self.rows_spin.setMinimum(1)
         self.rows_spin.setMaximum(100)
@@ -125,14 +125,14 @@ class PrinterSelectorGUI(QMainWindow):
         
         # Rectangle settings
         from PyQt6.QtWidgets import QCheckBox
-        self.rect_checkbox = QCheckBox("Tisknout obdélník kolem textu")
+        self.rect_checkbox = QCheckBox("Print border rectangle around text")
         self.rect_checkbox.setChecked(True)
         self.rect_checkbox.stateChanged.connect(self.update_rectangle_enabled)
         settings_layout.addWidget(self.rect_checkbox)
         
         # Rectangle width
         rect_width_layout = QHBoxLayout()
-        rect_width_label = QLabel("Šířka obdélníku (mm):")
+        rect_width_label = QLabel("Border width (mm):")
         self.rect_width_spin = QSpinBox()
         self.rect_width_spin.setMinimum(10)
         self.rect_width_spin.setMaximum(100)
@@ -145,7 +145,7 @@ class PrinterSelectorGUI(QMainWindow):
         
         # Rectangle height
         rect_height_layout = QHBoxLayout()
-        rect_height_label = QLabel("Výška obdélníku (mm):")
+        rect_height_label = QLabel("Border height (mm):")
         self.rect_height_spin = QSpinBox()
         self.rect_height_spin.setMinimum(10)
         self.rect_height_spin.setMaximum(100)
@@ -160,16 +160,16 @@ class PrinterSelectorGUI(QMainWindow):
         main_layout.addWidget(settings_group)
         
         # File selection group
-        file_group = QGroupBox("Soubor Excel")
+        file_group = QGroupBox("Excel File")
         file_layout = QVBoxLayout()
         
         # File path display
-        self.file_label = QLabel("Žádný soubor nevybrán")
+        self.file_label = QLabel("No file selected")
         self.file_label.setWordWrap(True)
         file_layout.addWidget(self.file_label)
         
         # Select file button
-        select_file_btn = QPushButton("Vybrat Excel soubor")
+        select_file_btn = QPushButton("Select Excel file")
         select_file_btn.clicked.connect(self.select_file)
         select_file_btn.setMinimumHeight(35)
         file_layout.addWidget(select_file_btn)
@@ -178,7 +178,7 @@ class PrinterSelectorGUI(QMainWindow):
         main_layout.addWidget(file_group)
         
         # Print button
-        self.print_btn = QPushButton("Tisknout")
+        self.print_btn = QPushButton("Print")
         self.print_btn.setMinimumHeight(45)
         self.print_btn.setStyleSheet("""
             QPushButton {
@@ -218,25 +218,25 @@ class PrinterSelectorGUI(QMainWindow):
             self.printer_combo.clear()
             all_printers = []
             
-            print("=== Načítání tiskáren ===")
+            print("=== Loading printers ===")
             
-            # Metoda 1: Zebra knihovna
+            # Method 1: Zebra library
             try:
                 z = Zebra()
                 zebra_printers = z.getqueues()
-                print(f"Zebra knihovna: {zebra_printers}")
+                print(f"Zebra library: {zebra_printers}")
                 if zebra_printers:
                     all_printers.extend(zebra_printers)
             except Exception as e:
-                print(f"Zebra knihovna selhala: {e}")
+                print(f"Zebra library failed: {e}")
             
-            # Metoda 2: lpstat -a (všechny dostupné tiskárny)
+            # Method 2: lpstat -a (all available printers)
             try:
                 result = subprocess.run(['lpstat', '-a'], 
                                       capture_output=True, 
                                       text=True, 
                                       timeout=5)
-                print(f"lpstat -a výstup:\n{result.stdout}")
+                print(f"lpstat -a output:\n{result.stdout}")
                 if result.returncode == 0:
                     for line in result.stdout.split('\n'):
                         if line.strip():
@@ -244,15 +244,15 @@ class PrinterSelectorGUI(QMainWindow):
                             if printer_name not in all_printers:
                                 all_printers.append(printer_name)
             except Exception as e:
-                print(f"lpstat -a selhalo: {e}")
+                print(f"lpstat -a failed: {e}")
             
-            # Metoda 3: lpstat -p (detaily tiskáren)
+            # Method 3: lpstat -p (printer details)
             try:
                 result = subprocess.run(['lpstat', '-p'], 
                                       capture_output=True, 
                                       text=True, 
                                       timeout=5)
-                print(f"lpstat -p výstup:\n{result.stdout}")
+                print(f"lpstat -p output:\n{result.stdout}")
                 if result.returncode == 0:
                     for line in result.stdout.split('\n'):
                         if line.startswith('printer '):
@@ -260,15 +260,15 @@ class PrinterSelectorGUI(QMainWindow):
                             if printer_name not in all_printers:
                                 all_printers.append(printer_name)
             except Exception as e:
-                print(f"lpstat -p selhalo: {e}")
+                print(f"lpstat -p failed: {e}")
             
-            # Metoda 4: lpstat -v (verbose)
+            # Method 4: lpstat -v (verbose)
             try:
                 result = subprocess.run(['lpstat', '-v'], 
                                       capture_output=True, 
                                       text=True, 
                                       timeout=5)
-                print(f"lpstat -v výstup:\n{result.stdout}")
+                print(f"lpstat -v output:\n{result.stdout}")
                 if result.returncode == 0:
                     for line in result.stdout.split('\n'):
                         if line.startswith('device for '):
@@ -276,48 +276,48 @@ class PrinterSelectorGUI(QMainWindow):
                             if printer_name not in all_printers:
                                 all_printers.append(printer_name)
             except Exception as e:
-                print(f"lpstat -v selhalo: {e}")
+                print(f"lpstat -v failed: {e}")
             
-            # Odstranění duplicit a seřazení
+            # Remove duplicates and sort
             all_printers = sorted(list(set(all_printers)))
-            print(f"Celkem nalezeno: {all_printers}")
+            print(f"Total found: {all_printers}")
             
             if all_printers:
                 self.printer_combo.addItems(all_printers)
-                self.status_label.setText(f"Nalezeno {len(all_printers)} tiskáren")
+                self.status_label.setText(f"Found {len(all_printers)} printer(s)")
                 self.status_label.setStyleSheet("color: green;")
                 
                 # Load last used printer
                 last_printer = self.load_last_printer()
                 if last_printer and last_printer in all_printers:
                     self.printer_combo.setCurrentText(last_printer)
-                    print(f"Nastavena poslední použitá tiskárna: {last_printer}")
+                    print(f"Restored last used printer: {last_printer}")
                 
                 self.check_ready_to_print()
             else:
-                self.status_label.setText("Žádné tiskárny nebyly nalezeny! Zkontrolujte terminál.")
+                self.status_label.setText("No printers found! Check the terminal output.")
                 self.status_label.setStyleSheet("color: red;")
                 
         except Exception as e:
-            print(f"Hlavní chyba: {e}")
-            self.status_label.setText(f"Chyba při načítání tiskáren: {str(e)}")
+            print(f"Main error: {e}")
+            self.status_label.setText(f"Error loading printers: {str(e)}")
             self.status_label.setStyleSheet("color: red;")
     
     def update_label_size(self, value):
         """Update label size based on selection"""
         label_sizes = {
-            "50x25mm (2x1 palce)": (2 * 203, 1 * 203),
-            "4x6 palců (102x152mm)": (4 * 203, 6 * 203),
-            "4x3 palců (102x76mm)": (4 * 203, 3 * 203),
-            "4x2 palců (102x51mm)": (4 * 203, 2 * 203),
-            "3x2 palců (76x51mm)": (3 * 203, 2 * 203),
-            "3x1 palců (76x25mm)": (3 * 203, 1 * 203),
-            "2x1 palců (51x25mm)": (2 * 203, 1 * 203)
+            "50x25mm (2x1 inches)": (2 * 203, 1 * 203),
+            "4x6 inches (102x152mm)": (4 * 203, 6 * 203),
+            "4x3 inches (102x76mm)": (4 * 203, 3 * 203),
+            "4x2 inches (102x51mm)": (4 * 203, 2 * 203),
+            "3x2 inches (76x51mm)": (3 * 203, 2 * 203),
+            "3x1 inches (76x25mm)": (3 * 203, 1 * 203),
+            "2x1 inches (51x25mm)": (2 * 203, 1 * 203)
         }
         
         if value in label_sizes:
             self.label_width, self.label_height = label_sizes[value]
-            print(f"Nastavena velikost štítku: {value} -> {self.label_width}x{self.label_height} bodů")
+            print(f"Label size set: {value} -> {self.label_width}x{self.label_height} dots")
     
     def update_dpi(self, value):
         """Update DPI setting"""
@@ -343,14 +343,14 @@ class PrinterSelectorGUI(QMainWindow):
         """Open file dialog to select Excel file"""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Vyberte Excel soubor",
+            "Select Excel file",
             "",
             "Excel Files (*.xlsx *.xls)"
         )
         
         if file_path:
             self.file_path = file_path
-            self.file_label.setText(f"Vybraný soubor: {file_path}")
+            self.file_label.setText(f"Selected file: {file_path}")
             self.check_ready_to_print()
     
     def check_ready_to_print(self):
@@ -400,7 +400,7 @@ class PrinterSelectorGUI(QMainWindow):
             if any(cell is not None and str(cell).strip() != '' for cell in row):
                 data.append(row)
         
-        print(f"Načteno {len(data)} řádků z Excelu (včetně hlavičky)")
+        print(f"Loaded {len(data)} rows from Excel (including header)")
         return data
     
     def generate_zpl(self, data):
@@ -438,7 +438,7 @@ class PrinterSelectorGUI(QMainWindow):
         
         # Get all non-empty cells and reverse the order (bottom to top)
         text_parts = [str(cell) for cell in row if cell is not None and str(cell).strip() != '']
-        text_parts.reverse()  # Reverse order - from bottom to top
+        text_parts.reverse()  # Reverse order so first cell appears at top
         
         # Calculate positions for vertical centering of text
         font_height = int(40 * scale)
@@ -451,14 +451,14 @@ class PrinterSelectorGUI(QMainWindow):
         else:
             total_text_height = 0
         
-        # Center text block on label, then move 0.5mm lower
-        text_offset_mm = 0.5  # Posun textu o 0.5mm níže
+        # Center text block on label, then shift 0.5mm down
+        text_offset_mm = 0.5  # Shift text 0.5mm downward
         text_start_y = int((self.label_height * scale - total_text_height) / 2 + (text_offset_mm * self.dpi / 25.4 * scale))
         
         # Debug output
         print(f"\n=== DEBUG ZPL ===")
-        print(f"Label: {self.label_width}x{self.label_height} bodů (scale={scale})")
-        print(f"Label scaled: {int(self.label_width * scale)}x{int(self.label_height * scale)} bodů")
+        print(f"Label: {self.label_width}x{self.label_height} dots (scale={scale})")
+        print(f"Label scaled: {int(self.label_width * scale)}x{int(self.label_height * scale)} dots")
         print(f"Font: {font_height}x{font_width}, spacing: {line_spacing}")
         print(f"Text parts: {len(text_parts)}, total height: {total_text_height}")
         print(f"Text start Y: {text_start_y} (with {text_offset_mm}mm offset)")
@@ -491,19 +491,19 @@ class PrinterSelectorGUI(QMainWindow):
     def generate_multiple_labels(self, data):
         """Generate multiple labels - one label per Excel row"""
         print(f"=== generate_multiple_labels ===")
-        print(f"Celkem řádků: {len(data)}")
-        print(f"Max štítků: {self.max_rows}")
+        print(f"Total rows: {len(data)}")
+        print(f"Max labels: {self.max_rows}")
         
         if len(data) == 0:
-            print("Data jsou prázdná")
+            print("Data is empty")
             return "^XA^XZ\n"
         
         # Take only max_rows (each row = one label)
         limited_rows = data[:self.max_rows]
         
-        print(f"Tisknu {len(limited_rows)} štítků")
+        print(f"Printing {len(limited_rows)} label(s)")
         for i, row in enumerate(limited_rows):
-            print(f"  Štítek {i+1}: {row}")
+            print(f"  Label {i+1}: {row}")
         print("================================")
         
         # Generate ZPL for all labels
@@ -516,33 +516,33 @@ class PrinterSelectorGUI(QMainWindow):
     def print_label(self):
         """Print the label using selected printer"""
         if not self.file_path:
-            QMessageBox.warning(self, "Chyba", "Nebyl vybrán žádný soubor!")
+            QMessageBox.warning(self, "Error", "No file selected!")
             return
         
         if not self.printer_combo.currentText():
-            QMessageBox.warning(self, "Chyba", "Nebyla vybrána žádná tiskárna!")
+            QMessageBox.warning(self, "Error", "No printer selected!")
             return
         
         try:
             # Load Excel data
-            self.status_label.setText("Načítám data z Excelu...")
+            self.status_label.setText("Loading data from Excel...")
             self.status_label.setStyleSheet("color: blue;")
             QApplication.processEvents()
             
             data = self.load_excel_data(self.file_path)
             
             if not data:
-                QMessageBox.warning(self, "Chyba", "Excel soubor je prázdný!")
+                QMessageBox.warning(self, "Error", "Excel file is empty!")
                 return
             
-            print(f"=== DEBUG: Načtená data z Excelu ===")
-            print(f"Celkem řádků: {len(data)}")
+            print(f"=== DEBUG: Loaded Excel data ===")
+            print(f"Total rows: {len(data)}")
             for idx, row in enumerate(data):
-                print(f"Řádek {idx}: {row}")
-            print(f"===================================")
+                print(f"Row {idx}: {row}")
+            print(f"================================")
             
             # Generate ZPL
-            self.status_label.setText("Generuji ZPL kód...")
+            self.status_label.setText("Generating ZPL code...")
             QApplication.processEvents()
             
             # Calculate actual labels to print (each row = one label)
@@ -552,7 +552,7 @@ class PrinterSelectorGUI(QMainWindow):
             zpl_content = self.sanitize_zpl(zpl_content)
             
             # Print
-            self.status_label.setText("Tisknu...")
+            self.status_label.setText("Printing...")
             QApplication.processEvents()
             
             selected_printer = self.printer_combo.currentText()
@@ -562,20 +562,20 @@ class PrinterSelectorGUI(QMainWindow):
             # Save last used printer
             self.save_last_printer(selected_printer)
             
-            self.status_label.setText(f"✓ Tisk dokončen! ({actual_labels_to_print} štítků)")
+            self.status_label.setText(f"✓ Print complete! ({actual_labels_to_print} label(s))")
             self.status_label.setStyleSheet("color: green;")
             
             QMessageBox.information(
-                self, 
-                "Úspěch", 
-                f"Tisk byl úspěšně odeslán na tiskárnu:\n{selected_printer}\n\n"
-                f"Vytištěno {actual_labels_to_print} štítků (max. {self.max_rows})."
+                self,
+                "Success",
+                f"Print job sent successfully to:\n{selected_printer}\n\n"
+                f"Printed {actual_labels_to_print} label(s) (max. {self.max_rows})."
             )
             
         except Exception as e:
-            self.status_label.setText(f"Chyba při tisku!")
+            self.status_label.setText(f"Print error!")
             self.status_label.setStyleSheet("color: red;")
-            QMessageBox.critical(self, "Chyba", f"Nastala chyba při tisku:\n{str(e)}")
+            QMessageBox.critical(self, "Error", f"An error occurred while printing:\n{str(e)}")
     
     def save_last_printer(self, printer_name):
         """Save last used printer to config file"""
@@ -583,9 +583,9 @@ class PrinterSelectorGUI(QMainWindow):
             config = {'last_printer': printer_name}
             with open(self.config_file, 'w') as f:
                 json.dump(config, f)
-            print(f"Uložena tiskárna: {printer_name}")
+            print(f"Saved printer: {printer_name}")
         except Exception as e:
-            print(f"Nepodařilo se uložit tiskárnu: {e}")
+            print(f"Failed to save printer: {e}")
     
     def load_last_printer(self):
         """Load last used printer from config file"""
@@ -595,7 +595,7 @@ class PrinterSelectorGUI(QMainWindow):
                     config = json.load(f)
                 return config.get('last_printer')
         except Exception as e:
-            print(f"Nepodařilo se načíst tiskárnu: {e}")
+            print(f"Failed to load printer: {e}")
         return None
 
 
