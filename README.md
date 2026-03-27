@@ -1,4 +1,4 @@
-# Zebra Label Organizer
+# Organizer labels with zebra printer
 
 A PyQt6 GUI application for printing labels on a Zebra printer from an Excel file.
 

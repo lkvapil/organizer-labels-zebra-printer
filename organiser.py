@@ -34,7 +34,7 @@ class PrinterSelectorGUI(QMainWindow):
             self.check_ready_to_print()
         
     def init_ui(self):
-        self.setWindowTitle("Zebra Label Organizer")
+        self.setWindowTitle("Organizer labels with zebra printer")
         self.setGeometry(100, 100, 600, 500)
         
         # Central widget
@@ -45,7 +45,7 @@ class PrinterSelectorGUI(QMainWindow):
         main_layout.setContentsMargins(20, 20, 20, 20)
         
         # Title
-        title = QLabel("Zebra Label Organizer")
+        title = QLabel("Organizer labels with zebra printer")
         title_font = QFont()
         title_font.setPointSize(16)
         title_font.setBold(True)
