@@ -177,7 +177,7 @@ class PrinterSelectorGUI(QMainWindow):
         file_layout.addWidget(select_file_btn)
 
         # Excel preview table
-        preview_label = QLabel("Preview (first 10 rows):")
+        preview_label = QLabel("Preview (all rows):")
         file_layout.addWidget(preview_label)
 
         self.preview_table = QTableWidget()
@@ -376,8 +376,6 @@ class PrinterSelectorGUI(QMainWindow):
             for row in sheet.iter_rows(values_only=True):
                 if any(cell is not None and str(cell).strip() != '' for cell in row):
                     rows.append(row)
-                if len(rows) >= 10:
-                    break
 
             if not rows:
                 self.preview_table.setRowCount(0)
