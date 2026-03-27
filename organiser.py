@@ -340,38 +340,47 @@ class PrinterSelectorGUI(QMainWindow):
     def update_label_size(self, value):
         """Update label size based on selection"""
         label_sizes = {
-            "50x25mm (2x1 inches)": (2 * 203, 1 * 203),
-            "4x6 inches (102x152mm)": (4 * 203, 6 * 203),
-            "4x3 inches (102x76mm)": (4 * 203, 3 * 203),
-            "4x2 inches (102x51mm)": (4 * 203, 2 * 203),
-            "3x2 inches (76x51mm)": (3 * 203, 2 * 203),
-            "3x1 inches (76x25mm)": (3 * 203, 1 * 203),
-            "2x1 inches (51x25mm)": (2 * 203, 1 * 203)
+            "50x25mm (2x1 inches)": (2 * self.dpi, 1 * self.dpi),
+            "4x6 inches (102x152mm)": (4 * self.dpi, 6 * self.dpi),
+            "4x3 inches (102x76mm)": (4 * self.dpi, 3 * self.dpi),
+            "4x2 inches (102x51mm)": (4 * self.dpi, 2 * self.dpi),
+            "3x2 inches (76x51mm)": (3 * self.dpi, 2 * self.dpi),
+            "3x1 inches (76x25mm)": (3 * self.dpi, 1 * self.dpi),
+            "2x1 inches (51x25mm)": (2 * self.dpi, 1 * self.dpi)
         }
-        
+
         if value in label_sizes:
             self.label_width, self.label_height = label_sizes[value]
             print(f"Label size set: {value} -> {self.label_width}x{self.label_height} dots")
-    
+            if hasattr(self, 'zpl_preview_img'):
+                self.preview_zpl_label()
+
     def update_dpi(self, value):
-        """Update DPI setting"""
+        """Update DPI setting and recalculate label dimensions"""
         self.dpi = int(value)
-        
+        self.update_label_size(self.label_size_combo.currentText())
+
     def update_max_rows(self, value):
         """Update max rows per label"""
         self.max_rows = value
-    
+
     def update_rectangle_enabled(self, state):
         """Update rectangle printing"""
         self.print_rectangle = (state == 2)  # Qt.CheckState.Checked
-    
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
     def update_rect_width(self, value):
         """Update rectangle width"""
         self.rect_width_mm = value
-    
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
+
     def update_rect_height(self, value):
         """Update rectangle height"""
         self.rect_height_mm = value
+        if hasattr(self, 'zpl_preview_img'):
+            self.preview_zpl_label()
     
     def select_file(self):
         """Open file dialog to select Excel file"""
@@ -550,10 +559,12 @@ class PrinterSelectorGUI(QMainWindow):
         text_parts = [str(cell) for cell in row if cell is not None and str(cell).strip() != '']
         text_parts.reverse()  # Reverse order so first cell appears at top
         
-        # Calculate positions for vertical centering of text
-        font_height = int(40 * scale)
-        font_width = int(40 * scale)
-        line_spacing = int(50 * scale)
+        # Font scales proportionally with label height, adjusted for number of lines
+        n_lines = max(len(text_parts), 1)
+        font_height = int(self.label_height * scale * 0.20 / (n_lines ** 0.5))
+        font_height = max(20, min(font_height, 200))
+        font_width = font_height
+        line_spacing = int(font_height * 1.25)
         
         # Calculate actual text height: (n-1) spacings + 1 font height
         if len(text_parts) > 0:
