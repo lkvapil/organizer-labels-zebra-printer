@@ -3,7 +3,8 @@ import json
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QComboBox, QPushButton, 
-                             QFileDialog, QMessageBox, QSpinBox, QGroupBox)
+                             QFileDialog, QMessageBox, QSpinBox, QGroupBox,
+                             QTableWidget, QTableWidgetItem, QHeaderView)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from zebra import Zebra
@@ -31,11 +32,12 @@ class PrinterSelectorGUI(QMainWindow):
         if os.path.exists(default_file):
             self.file_path = default_file
             self.file_label.setText(f"Selected file: {default_file}")
+            self.load_preview(default_file)
             self.check_ready_to_print()
         
     def init_ui(self):
         self.setWindowTitle("Organizer labels with zebra printer")
-        self.setGeometry(100, 100, 600, 500)
+        self.setGeometry(100, 100, 700, 750)
         
         # Central widget
         central_widget = QWidget()
@@ -173,6 +175,17 @@ class PrinterSelectorGUI(QMainWindow):
         select_file_btn.clicked.connect(self.select_file)
         select_file_btn.setMinimumHeight(35)
         file_layout.addWidget(select_file_btn)
+
+        # Excel preview table
+        preview_label = QLabel("Preview (first 10 rows):")
+        file_layout.addWidget(preview_label)
+
+        self.preview_table = QTableWidget()
+        self.preview_table.setMinimumHeight(180)
+        self.preview_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.preview_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.preview_table.setAlternatingRowColors(True)
+        file_layout.addWidget(self.preview_table)
         
         file_group.setLayout(file_layout)
         main_layout.addWidget(file_group)
@@ -351,8 +364,39 @@ class PrinterSelectorGUI(QMainWindow):
         if file_path:
             self.file_path = file_path
             self.file_label.setText(f"Selected file: {file_path}")
+            self.load_preview(file_path)
             self.check_ready_to_print()
     
+    def load_preview(self, file_path):
+        """Load and display first 10 rows of Excel file in the preview table"""
+        try:
+            workbook = openpyxl.load_workbook(file_path)
+            sheet = workbook.active
+            rows = []
+            for row in sheet.iter_rows(values_only=True):
+                if any(cell is not None and str(cell).strip() != '' for cell in row):
+                    rows.append(row)
+                if len(rows) >= 10:
+                    break
+
+            if not rows:
+                self.preview_table.setRowCount(0)
+                self.preview_table.setColumnCount(0)
+                return
+
+            max_cols = max(len(r) for r in rows)
+            self.preview_table.setRowCount(len(rows))
+            self.preview_table.setColumnCount(max_cols)
+            self.preview_table.setHorizontalHeaderLabels([f"Col {i+1}" for i in range(max_cols)])
+
+            for r_idx, row in enumerate(rows):
+                for c_idx in range(max_cols):
+                    value = row[c_idx] if c_idx < len(row) else None
+                    item = QTableWidgetItem(str(value) if value is not None else "")
+                    self.preview_table.setItem(r_idx, c_idx, item)
+        except Exception as e:
+            print(f"Preview error: {e}")
+
     def check_ready_to_print(self):
         """Check if all requirements are met for printing"""
         if self.file_path and self.printer_combo.currentText():
