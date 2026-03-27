@@ -88,7 +88,7 @@ class PrinterSelectorGUI(QMainWindow):
         label_size_label = QLabel("Label size:")
         self.label_size_combo = QComboBox()
         self.label_size_combo.addItems([
-            "50x25mm (2x1 inches)",
+            "2x1 inches (50x25mm)",
             "4x6 inches (102x152mm)",
             "4x3 inches (102x76mm)",
             "4x2 inches (102x51mm)",
@@ -96,7 +96,7 @@ class PrinterSelectorGUI(QMainWindow):
             "3x1 inches (76x25mm)",
             "2x1 inches (51x25mm)"
         ])
-        self.label_size_combo.setCurrentText("50x25mm (2x1 inches)")
+        self.label_size_combo.setCurrentText("2x1 inches (50x25mm)")
         self.label_size_combo.currentTextChanged.connect(self.update_label_size)
         label_size_layout.addWidget(label_size_label)
         label_size_layout.addWidget(self.label_size_combo)
@@ -340,7 +340,7 @@ class PrinterSelectorGUI(QMainWindow):
     def update_label_size(self, value):
         """Update label size based on selection"""
         label_sizes = {
-            "50x25mm (2x1 inches)": (2 * self.dpi, 1 * self.dpi),
+            "2x1 inches (50x25mm)": (2 * self.dpi, 1 * self.dpi),
             "4x6 inches (102x152mm)": (4 * self.dpi, 6 * self.dpi),
             "4x3 inches (102x76mm)": (4 * self.dpi, 3 * self.dpi),
             "4x2 inches (102x51mm)": (4 * self.dpi, 2 * self.dpi),
