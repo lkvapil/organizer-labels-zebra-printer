@@ -16,7 +16,7 @@ The application loads data from `organiser.xlsx` and sends labels to a Zebra pri
 Install dependencies:
 
 ```bash
-pip install PyQt6 openpyxl zebra-day
+pip install PyQt6 openpyxl zebra
 ```
 
 ## Usage
@@ -46,6 +46,6 @@ This project uses the following open-source libraries:
 |---------|---------|-------|
 | [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) | GPL v3 / Commercial | Free for open-source use under GPL v3; commercial use requires a license from Riverbank Computing |
 | [openpyxl](https://openpyxl.readthedocs.io/) | MIT | Free to use in any project |
-| [zebra-day](https://github.com/kylemacfarlane/zebra-day) | MIT | Free to use in any project |
+| [zebra](https://pypi.org/project/zebra/) | MIT | Free to use in any project |
 
 This project itself is released under the MIT License — see [LICENSE](LICENSE) for details.
