@@ -1,0 +1,11 @@
+{
+  "_comment": "Fine-tune label element positions.",
+  "norm_name": {
+    "_comment_y": "Distance from BOTTOM edge to norm text top (mm).",
+    "y_offset_from_bottom_mm": 4.0,
+    "x_offset_from_right_mm": 7.5,
+    "_comment_font": "Font size in dots at 203 DPI. Scaled automatically for 300 DPI.",
+    "font_height_dots": 25,
+    "font_width_dots": 25
+  }
+}
